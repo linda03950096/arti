@@ -7,6 +7,7 @@
   --spring-pop: linear(0, 0.0902, 0.3094, 0.5826, 0.8474, 1.0612, 1.2022, 1.2677, 1.2684, 1.2231, 1.153, 1.0771, 1.0102, 0.9611, 0.9328, 0.9243, 0.9312, 0.9478, 0.9685, 0.9885, 1.0047, 1.0153, 1.0203, 1.0203, 1.0169, 1.0116, 1.0058, 1.0008, 0.997, 0.9949, 0.9943, 0.9948, 0.9961, 0.9976, 1);
   --ko: "Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --helv: "Helvetica Neue", Helvetica, Arial, var(--ko);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ext: "Archivo", "Helvetica Neue", Arial, sans-serif;
 }
 html { font-size: calc(100vw / 1920); }
@@ -51,8 +52,32 @@ button { font: inherit; color: inherit; border: 0; background: none; padding: 0;
 .heading h2 { font-weight: 700; line-height: 1.4; display: inline-flex; gap: 20rem; align-items: flex-start; }
 .heading .ko { font-size: 36rem; letter-spacing: -0.02em; }
 
-/* 그래프 (1920 × 547) */
-.graph img { width: 100%; height: auto; aspect-ratio: 1920 / 547; }
+/* 그래프 (1920 × 547) — 화면에 들어오면 축 → 곡선 → 영역 → 글자 순서로 그려짐 */
+.graph-svg { display: block; width: 100%; height: auto; aspect-ratio: 1920 / 547; }
+.graph-svg * { transform-box: fill-box; }
+.g-axis-y { transform-origin: 50% 100%; transform: scaleY(0); }
+.g-axis-x { transform-origin: 0 50%; transform: scaleX(0); }
+.g-curve, .g-diag { clip-path: inset(0 100% 0 0); }
+.g-area, .g-hatch { opacity: 0; }
+.g-hatch { clip-path: inset(100% 0 0 0); }
+.g-label { opacity: 0; transform: translateY(12px); }
+.g-dot { transform-origin: center; transform: scale(0); }
+.g-ring { transform-origin: center; opacity: 0; }
+.graph.in .g-axis-y { transform: none; transition: transform 0.9s var(--ease-out); }
+.graph.in .g-axis-x { transform: none; transition: transform 0.9s var(--ease-out) 0.15s; }
+.graph.in .g-diag { clip-path: inset(0 0 0 0); transition: clip-path 1.1s var(--ease-out) 0.7s; }
+.graph.in .g-curve { clip-path: inset(0 0 0 0); transition: clip-path 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.9s; }
+.graph.in .g-area { opacity: 1; transition: opacity 0.8s ease 2.1s; }
+.graph.in .g-hatch { opacity: 1; clip-path: inset(0 0 0 0); transition: opacity 0.4s ease 2.1s, clip-path 1s var(--ease-out) 2.1s; }
+.graph.in .g-label { opacity: 1; transform: none; transition: opacity 0.6s ease, transform 0.8s var(--ease-out); }
+.graph.in .l1 { transition-delay: 0.5s; }
+.graph.in .l2 { transition-delay: 0.6s; }
+.graph.in .l3 { transition-delay: 1.8s; }
+.graph.in .l4 { transition-delay: 2.1s; }
+.graph.in .l5 { transition-delay: 2.5s; }
+.graph.in .g-dot { transform: none; transition: transform 0.7s var(--spring-pop) 2.4s; }
+.graph.in .g-ring { animation: ring 2.4s ease-out 3s infinite; }
+@keyframes ring { 0% { opacity: 0.9; transform: scale(1); } 100% { opacity: 0; transform: scale(4.5); } }
 
 /* 통계 (1920 × 804) */
 .stats { height: 804rem; position: relative; overflow: hidden; }
@@ -88,9 +113,44 @@ button { font: inherit; color: inherit; border: 0; background: none; padding: 0;
 .book-frame { position: absolute; width: 1092.428rem; height: 647.607rem; left: calc(50% - 33.93rem); top: 50%; transform: translate(-50%, -50%); overflow: hidden; }
 .book-frame img { height: 100%; width: 106.21%; max-width: none; }
 
-/* 스크롤하면 부드럽게 나타남 */
-.reveal, .text, .label, .stat { opacity: 0; transform: translateY(40px); transition: opacity 0.6s ease, transform 0.9s var(--spring-soft); }
-.in { opacity: 1; transform: none; }
+/* 스크롤하면 50px 아래에서 부드럽게 올라옴 (참고 사이트와 같은 방식) */
+.reveal, .text > *, .label, .stat, .heading, .rise { opacity: 0; transform: translateY(50px); transition: opacity 1s var(--ease-out), transform 1s var(--ease-out); }
+.text > .b { transition-delay: 0.12s; }
+.rise { transform: translateY(50px) scale(0.98); }
+.in, .in.text > *, .text.in > * { opacity: 1; transform: none; }
+.text.in > .ghost { opacity: 0; }
+/* 꽉 찬 이미지·영상은 살짝 확대된 상태에서 제자리로 */
+.full > img, .full > video { transform: scale(1.06); transition: transform 1.6s var(--ease-out); }
+.full.in > img, .full.in > video { transform: none; }
+
+/* 상단 바: 반투명 유리 */
+.site-header {
+  position: fixed; inset: 0 0 auto; z-index: 20; height: 64px; padding: 0 24px;
+  display: flex; align-items: center; gap: 28px;
+  background: rgba(0, 0, 0, 0.45); -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  transition: transform 0.5s var(--ease-out);
+}
+.site-header.hide { transform: translateY(-100%); }
+.brand img { height: 26px; width: auto; }
+.brand-sub { flex: 1; min-width: 0; font-size: 12px; color: rgba(255, 255, 255, 0.45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav { display: flex; gap: 6px; }
+.nav a { display: block; height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.35); color: #fff; text-decoration: none; font-size: 14px; font-weight: 600; line-height: 30px; overflow: hidden; transition: background 0.3s, color 0.3s, border-color 0.3s; }
+.nav a span { display: block; position: relative; transition: transform 0.6s var(--ease-out); }
+.nav a span::after { content: attr(data-t); position: absolute; left: 0; top: 100%; }
+.nav a:hover span { transform: translateY(-100%); }
+.nav a.on { background: #fff; color: #000; border-color: #fff; }
+
+/* 아래 가운데: 지금 보고 있는 섹션 이름 */
+.chapter {
+  position: fixed; left: 50%; bottom: 40px; z-index: 20; transform: translateX(-50%);
+  height: 30px; padding: 0 14px; border-radius: 999px; background: #ff94c8; color: #000;
+  font-size: 14px; font-weight: 700; line-height: 30px; letter-spacing: -0.01em; white-space: nowrap;
+  transition: opacity 0.4s ease;
+}
+.chapter span { display: inline-block; transition: opacity 0.25s ease, transform 0.35s var(--ease-out); }
+.chapter span.swap { opacity: 0; transform: translateY(6px); }
+.chapter.hide { opacity: 0; }
 
 /* 맨 위로 버튼 */
 .to-top {
@@ -128,8 +188,20 @@ button { font: inherit; color: inherit; border: 0; background: none; padding: 0;
   .num .n { font-size: 96px; }
   .num .u { font-size: 22px; margin-left: 6px; }
   .to-top { right: 16px; bottom: 16px; width: 44px; height: 44px; }
+  .site-header { height: 52px; padding: 0 16px; }
+  .brand img { height: 20px; }
+  .brand-sub, .nav { display: none; }
+  .chapter { bottom: 20px; height: 26px; line-height: 26px; font-size: 12px; }
 }
 
+@media (max-width: 1100px) { .brand-sub { display: none; } }
+
 @media (prefers-reduced-motion: reduce) {
-  .reveal, .text, .label, .stat { opacity: 1; transform: none; transition: none; }
+  .reveal, .text > *, .label, .stat, .heading, .rise, .full > img, .full > video,
+  .graph-svg *, .site-header, .chapter span { opacity: 1 !important; transform: none !important; clip-path: none !important; transition: none !important; animation: none !important; }
+  .g-ring { display: none; }
 }
+
+html { scroll-behavior: smooth; }
+[id] { scroll-margin-top: 64px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
